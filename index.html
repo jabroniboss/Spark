@@ -52,7 +52,7 @@
 
   .hero-top { padding: 48px 48px 0; display: flex; justify-content: space-between; align-items: flex-start; }
 
-  .logo { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 0.3em; color: var(--accent); }
+  .logo { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: 0.3em; color: var(--accent); }
 
   .hero-tag { font-size: 10px; color: var(--muted); letter-spacing: 0.2em; text-align: right; line-height: 1.8; }
 
@@ -241,13 +241,12 @@
 <div id="screen-hero" class="screen active">
   <div class="hero-top">
     <div class="logo">SPARK</div>
-    <div class="hero-tag">ФОРМАТ ЖИВОГО<br>ЗНАКОМСТВА<br>v1.0</div>
   </div>
   <div class="ticker">
     <span class="ticker-inner">БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp; БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp; БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp;</span>
   </div>
   <div class="hero-main">
-    <div class="hero-title">ЖИВОЕ<br><span>ЗНАКОМ</span>СТВО</div>
+    <div class="hero-title" id="hero-title"></div>
     <div class="hero-desc">
       Никаких свайпов. Никаких профилей. Никакой переписки до встречи.<br><br>
       Ты получаешь <strong>место, время и кодовое слово</strong>. Дальше — только реальность.
@@ -255,9 +254,9 @@
   </div>
   <div class="hero-bottom">
     <div class="hero-stats">
-      <div class="stat"><div class="stat-num">4</div><div class="stat-label">человека за столом</div></div>
-      <div class="stat"><div class="stat-num">2+2</div><div class="stat-label">мужчин и женщин</div></div>
-      <div class="stat"><div class="stat-num">0</div><div class="stat-label">фото до встречи</div></div>
+      <div class="stat"><div class="stat-num" id="stat-meetings">—</div><div class="stat-label" id="stat-meetings-label">...</div></div>
+      <div class="stat"><div class="stat-num">2+2</div><div class="stat-label" id="stat-gender-label">...</div></div>
+      <div class="stat"><div class="stat-num">0</div><div class="stat-label" id="stat-photo-label">...</div></div>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
       <button class="btn-secondary" onclick="showScreen('screen-how')">КАК ЭТО РАБОТАЕТ</button>
@@ -402,6 +401,239 @@
 
   const RESEND_KEY = 're_5nzZUkTa_F4wXgGsFMnAnKdzoSRMLQfok';
 
+  // ─── I18N ────────────────────────────────────────────────────────────────────
+  const LANG = (() => {
+    const l = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
+    if (l.startsWith('uk')) return 'uk';
+    if (l.startsWith('ru')) return 'ru';
+    return 'en';
+  })();
+
+  const T = {
+    uk: {
+      heroTitle: 'ТІЛЬКИ ЖИВЕ<br><span>ЗНАЙОМСТВО</span>',
+      statMeetings: 'зустрічей створено',
+      statGender: 'чоловіків та жінок',
+      statPhoto: 'фото до зустрічі',
+      ticker: 'БЕЗ ПРОФІЛІВ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТІЛЬКИ РЕАЛЬНІСТЬ &nbsp;·&nbsp; БЕЗ ПРОФІЛІВ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТІЛЬКИ РЕАЛЬНІСТЬ &nbsp;·&nbsp;',
+      heroDesc: 'Ніяких свайпів. Ніяких профілів. Ніякого листування до зустрічі.<br><br>Ти отримуєш <strong>місце, час і кодове слово</strong>. Далі — тільки реальність.',
+      btnHow: 'ЯК ЦЕ ПРАЦЮЄ',
+      btnJoin: 'ВЗЯТИ УЧАСТЬ',
+      formStep: 'КРОК 01 / 02',
+      formTitle: 'ХТО<br><span>ТИ</span>',
+      labelName: 'Ім\'я',
+      labelAge: 'Вік',
+      labelEmail: 'Email',
+      labelGender: 'Стать',
+      genderM: 'Ч',
+      genderF: 'Ж',
+      geoNotice: 'Геолокація використовується <strong>один раз</strong> — щоб знайти місця поруч з тобою.',
+      btnFindPlaces: 'ЗНАЙТИ МІСЦЯ →',
+      voteStep: 'КРОК 02 / 02 — АНОНІМНЕ ГОЛОСУВАННЯ',
+      voteTitle: 'ДЕ<br><span>ЗУСТРІНЕМОСЬ</span>',
+      voteNote: 'Час і дата призначаються автоматично.\nСистема додасть тебе до найближчої групи.\nДеталі надійдуть на пошту.',
+      btnVote: 'ПРОГОЛОСУВАТИ →',
+      confirmTitle: 'ГОТОВО',
+      confirmSub: 'ТИ В ГРІД',
+      codewordLabel: 'КОДОВЕ СЛОВО ДЛЯ ЗУСТРІЧІ',
+      codewordNote: 'Скажи це слово вголос коли прийдеш —<br>інші зрозуміють що ти з ними',
+      confirmFooter: 'Всі деталі надіслано на твою пошту.<br>Через 2 години після зустрічі ми запитаємо як все пройшло.<br><br>',
+      confirmFomo: 'Прийди — або пропусти.',
+      feedbackTitle: 'ЯК<br><span>ПРОЙШЛО?</span>',
+      feedbackSub: 'Розкажи про зустріч — це допомагає зробити Spark кращим.',
+      btnGood: 'ВСЕ ЧУДОВО',
+      btnBad: 'БУЛА ПРОБЛЕМА',
+      reasonsTitle: 'ЩО ПІШЛО НЕ ТАК',
+      reasons: ['Хтось не прийшов на зустріч','Некоректна поведінка учасника','Агресія або погрози','Неповажне ставлення','Інше'],
+      reportTitle: 'ПОСКАРЖИТИСЬ НА УЧАСНИКА (АНОНІМНО)',
+      btnSend: 'НАДІСЛАТИ →',
+      successTitle: 'ДЯКУЄМО',
+      successSub: 'Твій відгук отримано.<br>Він допоможе зробити наступні зустрічі кращими.<br><br><span style="color:var(--text)">До наступного Spark.</span>',
+      howPre: 'ЯК ЦЕ ПРАЦЮЄ',
+      howTitle: 'ПРОСТО.<br>ЧЕСНО.<br>НАЖИВО.',
+      slotWaiting: 'ЧЕКАЄМО ЩЕ',
+      slotFull: 'ГРУПУ ЗІБРАНО',
+      detailPlace: 'МІСЦЕ', detailAddr: 'АДРЕСА', detailDate: 'ДАТА', detailTime: 'ЧАС', detailGroup: 'СКЛАД ГРУПИ',
+      groupHot: 'ГРУПА МАЙЖЕ ЗІБРАНА', groupWait: 'ЧЕКАЄ УЧАСНИКІВ',
+      loadStep1: 'ВИЗНАЧАЄМО МІСЦЕЗНАХОДЖЕННЯ...', loadStep2: 'ШУКАЄМО МІСЦЯ ПОРУЧ...', loadStep3: 'ПІДБИРАЄМО ГРУПУ...',
+      errFill: 'Заповни всі поля', errAge: 'Вік від 18 до 65', errEmail: 'Вкажи коректний email',
+      errSave: 'Помилка збереження. Спробуй ще раз.', errVote: 'Помилка. Спробуй ще раз.',
+      errFeedback: 'Вибери причину або опиши що сталось',
+      saving: 'ЗБЕРІГАЄМО...', searching: 'ШУКАЄМО ГРУПУ...',
+      rulesTitle: 'ПРАВИЛА НА ЗУСТРІЧІ',
+      rule1: 'Не питай <strong>«чим займаєшся»</strong> перші 15 хвилин',
+      rule2: 'Не питай <strong>«скільки років»</strong>',
+      rule3: 'Телефон — <strong>в кишеню</strong> на першу годину',
+      btnJoin2: 'ВЗЯТИ УЧАСТЬ →',
+      back: '← НАЗАД',
+      commentLabel: 'Своїми словами (необов\'язково)',
+      commentPlaceholder: 'Опиши що сталось...',
+    },
+    ru: {
+      heroTitle: 'ТОЛЬКО ЖИВОЕ<br><span>ЗНАКОМСТВО</span>',
+      statMeetings: 'встреч создано',
+      statGender: 'мужчин и женщин',
+      statPhoto: 'фото до встречи',
+      ticker: 'БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp; БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp;',
+      heroDesc: 'Никаких свайпов. Никаких профилей. Никакой переписки до встречи.<br><br>Ты получаешь <strong>место, время и кодовое слово</strong>. Дальше — только реальность.',
+      btnHow: 'КАК ЭТО РАБОТАЕТ',
+      btnJoin: 'УЧАСТВОВАТЬ',
+      formStep: 'ШАГ 01 / 02',
+      formTitle: 'КТО<br><span>ТЫ</span>',
+      labelName: 'Имя',
+      labelAge: 'Возраст',
+      labelEmail: 'Email',
+      labelGender: 'Пол',
+      genderM: 'М',
+      genderF: 'Ж',
+      geoNotice: 'Геолокация используется <strong>один раз</strong> — чтобы найти места рядом с тобой.',
+      btnFindPlaces: 'НАЙТИ МЕСТА →',
+      voteStep: 'ШАГ 02 / 02 — АНОНИМНОЕ ГОЛОСОВАНИЕ',
+      voteTitle: 'ГДЕ<br><span>ВСТРЕТИМСЯ</span>',
+      voteNote: 'Время и дата назначаются автоматически.\nСистема добавит тебя в ближайшую группу.\nДетали придут на почту.',
+      btnVote: 'ПРОГОЛОСОВАТЬ →',
+      confirmTitle: 'ГОТОВО',
+      confirmSub: 'ТЫ В ИГРЕ',
+      codewordLabel: 'КОДОВОЕ СЛОВО ДЛЯ ВСТРЕЧИ',
+      codewordNote: 'Скажи это слово вслух когда придёшь —<br>остальные поймут что ты с ними',
+      confirmFooter: 'Все детали отправлены на твою почту.<br>Через 2 часа после встречи мы спросим как всё прошло.<br><br>',
+      confirmFomo: 'Приди — или упусти.',
+      feedbackTitle: 'КАК<br><span>ПРОШЛО?</span>',
+      feedbackSub: 'Расскажи о встрече — это помогает сделать Spark лучше.',
+      btnGood: 'ВСЁ ОТЛИЧНО',
+      btnBad: 'БЫЛА ПРОБЛЕМА',
+      reasonsTitle: 'ЧТО ПОШЛО НЕ ТАК',
+      reasons: ['Кто-то не пришёл на встречу','Некорректное поведение участника','Агрессия или угрозы','Неуважительное отношение','Другое'],
+      reportTitle: 'ПОЖАЛОВАТЬСЯ НА УЧАСТНИКА (АНОНИМНО)',
+      btnSend: 'ОТПРАВИТЬ →',
+      successTitle: 'СПАСИБО',
+      successSub: 'Твой отзыв получен.<br>Он поможет сделать следующие встречи лучше.<br><br><span style="color:var(--text)">До следующего Spark.</span>',
+      howPre: 'КАК ЭТО РАБОТАЕТ',
+      howTitle: 'ПРОСТО.<br>ЧЕСТНО.<br>ВЖИВУЮ.',
+      slotWaiting: 'ЖДЁМ ЕЩЁ', slotFull: 'ГРУППА СОБРАНА',
+      detailPlace: 'МЕСТО', detailAddr: 'АДРЕС', detailDate: 'ДАТА', detailTime: 'ВРЕМЯ', detailGroup: 'СОСТАВ ГРУППЫ',
+      groupHot: 'ГРУППА ПОЧТИ СОБРАНА', groupWait: 'ЖДЁТ УЧАСТНИКОВ',
+      loadStep1: 'ОПРЕДЕЛЯЕМ МЕСТОПОЛОЖЕНИЕ...', loadStep2: 'ИЩЕМ МЕСТА РЯДОМ...', loadStep3: 'ПОДБИРАЕМ ГРУППУ...',
+      errFill: 'Заполни все поля', errAge: 'Возраст от 18 до 65', errEmail: 'Укажи корректный email',
+      errSave: 'Ошибка сохранения. Попробуй ещё раз.', errVote: 'Ошибка. Попробуй ещё раз.',
+      errFeedback: 'Выбери причину или опиши что случилось',
+      saving: 'СОХРАНЯЕМ...', searching: 'ИЩЕМ ГРУППУ...',
+      rulesTitle: 'ПРАВИЛА НА ВСТРЕЧЕ',
+      rule1: 'Не спрашивай <strong>«чем занимаешься»</strong> первые 15 минут',
+      rule2: 'Не спрашивай <strong>«сколько лет»</strong>',
+      rule3: 'Телефон — <strong>в карман</strong> на первый час',
+      btnJoin2: 'УЧАСТВОВАТЬ →',
+      back: '← НАЗАД',
+      commentLabel: 'Своими словами (необязательно)',
+      commentPlaceholder: 'Опиши что случилось...',
+    },
+    en: {
+      heroTitle: 'ONLY REAL<br><span>CONNECTIONS</span>',
+      statMeetings: 'meetings created',
+      statGender: 'men and women',
+      statPhoto: 'photos before meeting',
+      ticker: 'NO PROFILES &nbsp;·&nbsp; NO PHOTOS &nbsp;·&nbsp; NO CHATS &nbsp;·&nbsp; ONLY REALITY &nbsp;·&nbsp; NO PROFILES &nbsp;·&nbsp; NO PHOTOS &nbsp;·&nbsp; NO CHATS &nbsp;·&nbsp; ONLY REALITY &nbsp;·&nbsp;',
+      heroDesc: 'No swiping. No profiles. No chatting before you meet.<br><br>You get a <strong>place, time and a codeword</strong>. The rest is real life.',
+      btnHow: 'HOW IT WORKS',
+      btnJoin: 'JOIN',
+      formStep: 'STEP 01 / 02',
+      formTitle: 'WHO<br><span>ARE YOU</span>',
+      labelName: 'Name',
+      labelAge: 'Age',
+      labelEmail: 'Email',
+      labelGender: 'Gender',
+      genderM: 'M',
+      genderF: 'F',
+      geoNotice: 'Location is used <strong>once</strong> — to find places near you.',
+      btnFindPlaces: 'FIND PLACES →',
+      voteStep: 'STEP 02 / 02 — ANONYMOUS VOTE',
+      voteTitle: 'WHERE<br><span>SHALL WE MEET</span>',
+      voteNote: 'Time and date are set automatically.\nThe system adds you to the nearest group.\nDetails sent to your email.',
+      btnVote: 'VOTE →',
+      confirmTitle: 'DONE',
+      confirmSub: 'YOU\'RE IN',
+      codewordLabel: 'CODEWORD FOR THE MEETING',
+      codewordNote: 'Say this word out loud when you arrive —<br>the others will know you\'re with them',
+      confirmFooter: 'All details sent to your email.<br>2 hours after the meeting we\'ll ask how it went.<br><br>',
+      confirmFomo: 'Show up — or miss out.',
+      feedbackTitle: 'HOW<br><span>DID IT GO?</span>',
+      feedbackSub: 'Tell us about the meeting — it helps make Spark better.',
+      btnGood: 'ALL GOOD',
+      btnBad: 'THERE WAS A PROBLEM',
+      reasonsTitle: 'WHAT WENT WRONG',
+      reasons: ['Someone didn\'t show up','Inappropriate behaviour','Aggression or threats','Disrespectful attitude','Other'],
+      reportTitle: 'REPORT A PARTICIPANT (ANONYMOUS)',
+      btnSend: 'SEND →',
+      successTitle: 'THANK YOU',
+      successSub: 'Your feedback was received.<br>It will help make the next meetings better.<br><br><span style="color:var(--text)">Until next Spark.</span>',
+      howPre: 'HOW IT WORKS',
+      howTitle: 'SIMPLE.<br>HONEST.<br>IN PERSON.',
+      slotWaiting: 'WAITING FOR', slotFull: 'GROUP COMPLETE',
+      detailPlace: 'PLACE', detailAddr: 'ADDRESS', detailDate: 'DATE', detailTime: 'TIME', detailGroup: 'GROUP',
+      groupHot: 'GROUP ALMOST FULL', groupWait: 'WAITING FOR MEMBERS',
+      loadStep1: 'DETECTING LOCATION...', loadStep2: 'FINDING NEARBY PLACES...', loadStep3: 'FINDING YOUR GROUP...',
+      errFill: 'Fill in all fields', errAge: 'Age must be 18–65', errEmail: 'Enter a valid email',
+      errSave: 'Save error. Please try again.', errVote: 'Error. Please try again.',
+      errFeedback: 'Select a reason or describe what happened',
+      saving: 'SAVING...', searching: 'FINDING GROUP...',
+      rulesTitle: 'RULES FOR THE MEETING',
+      rule1: 'Don\'t ask <strong>"what do you do"</strong> for the first 15 minutes',
+      rule2: 'Don\'t ask <strong>"how old are you"</strong>',
+      rule3: 'Phone — <strong>in your pocket</strong> for the first hour',
+      btnJoin2: 'JOIN →',
+      back: '← BACK',
+      commentLabel: 'In your own words (optional)',
+      commentPlaceholder: 'Describe what happened...',
+    },
+  };
+
+  const t = T[LANG];
+
+  // Apply i18n to static elements
+  function applyI18n() {
+    document.getElementById('hero-title').innerHTML = t.heroTitle;
+    document.getElementById('stat-meetings-label').textContent = t.statMeetings;
+    document.getElementById('stat-gender-label').textContent = t.statGender;
+    document.getElementById('stat-photo-label').textContent = t.statPhoto;
+    document.querySelector('.ticker-inner').innerHTML = t.ticker;
+    document.querySelector('.hero-desc').innerHTML = t.heroDesc;
+    // Hero buttons
+    const heroBtns = document.querySelectorAll('.hero-bottom .btn-secondary, .hero-bottom .btn-primary');
+    if (heroBtns[0]) heroBtns[0].textContent = t.btnHow;
+    if (heroBtns[1]) heroBtns[1].textContent = t.btnJoin;
+    // Form
+    document.querySelector('.form-step').textContent = t.formStep;
+    document.querySelector('#screen-form .section-title').innerHTML = t.formTitle;
+    document.querySelectorAll('.field label')[0].textContent = t.labelName;
+    document.querySelectorAll('.field label')[1].textContent = t.labelAge;
+    document.querySelectorAll('.field label')[2].textContent = t.labelEmail;
+    document.querySelector('.gender-label').textContent = t.labelGender;
+    document.getElementById('gender-m').textContent = t.genderM;
+    document.getElementById('gender-f').textContent = t.genderF;
+    document.querySelector('.geo-text').innerHTML = t.geoNotice;
+    document.getElementById('form-submit-btn').textContent = t.btnFindPlaces;
+    // Vote
+    document.querySelector('.form-step:last-of-type') && (document.querySelectorAll('.form-step')[1].textContent = t.voteStep);
+    // Feedback
+    document.querySelector('#screen-feedback .section-title').innerHTML = t.feedbackTitle;
+    document.querySelector('#screen-feedback .btn-feedback.good').textContent = t.btnGood;
+    document.querySelector('#screen-feedback .btn-feedback.bad').textContent = t.btnBad;
+    // Success
+    document.querySelector('.success-title').textContent = t.successTitle;
+    document.querySelector('.success-sub').innerHTML = t.successSub;
+    // Nav backs
+    document.querySelectorAll('.nav-back').forEach(b => b.textContent = t.back);
+  }
+
+  // Load real meetings count from Supabase
+  async function loadMeetingsCount() {
+    const { count } = await sb.from('groups').select('*', { count: 'exact', head: true });
+    document.getElementById('stat-meetings').textContent = count || 0;
+  }
+
+  applyI18n();
+  loadMeetingsCount();
+
   const CODEWORDS = ['RABBIT','ANCHOR','COMPASS','LANTERN','FALCON','MARBLE','SIGNAL','EMBER','CIPHER','ATLAS','VECTOR','PRISM','ECHO','DRIFT','NOVA'];
 
   const PLACES_DATA = [
@@ -423,8 +655,15 @@
     'Інше',
   ];
 
-  const DAYS = ['Понеділок','Вівторок','Середа','Четвер','П\'ятниця','Субота','Неділя'];
-  const MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  const DAYS_UK = ['Понеділок','Вівторок','Середа','Четвер','П\'ятниця','Субота','Неділя'];
+  const DAYS_RU = ['Понедельник','Вторник','Среда','Четверг','Пятница','Суббота','Воскресенье'];
+  const DAYS_EN = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const MONTHS_UK = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+  const MONTHS_RU = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const DAYS = LANG === 'uk' ? DAYS_UK : LANG === 'ru' ? DAYS_RU : DAYS_EN;
+  const MONTHS = LANG === 'uk' ? MONTHS_UK : LANG === 'ru' ? MONTHS_RU : MONTHS_EN;
 
   let state = {
     userId: null,
@@ -557,8 +796,8 @@
       const { data: newUser, error } = await sb.from('users').insert({ name, age, email, gender, verified: true }).select().single();
       if (error) {
         btn.disabled = false;
-        btn.textContent = 'ЗНАЙТИ МІСЦЯ →';
-        return showError('form-error', `Помилка: ${error.message} (${error.code})`);
+        btn.textContent = t.btnFindPlaces;
+        return showError('form-error', `${t.errSave} (${error.code})`);
       }
       state.userId = newUser.id;
       state.userName = name;
@@ -568,7 +807,7 @@
     state.userGender = gender;
 
     showScreen('screen-loading');
-    const steps = ['ВИЗНАЧАЄМО МІСЦЕЗНАХОДЖЕННЯ...', 'ШУКАЄМО МІСЦЯ ПОРУЧ...', 'ПІДБИРАЄМО ГРУПУ...'];
+    const steps = [t.loadStep1, t.loadStep2, t.loadStep3];
     let i = 0;
     const iv = setInterval(() => {
       i++;
@@ -596,7 +835,7 @@
         <div class="place-info">
           <div class="place-name">${place.name}</div>
           <div class="place-meta"><span class="place-type">${place.type}</span><span>${place.addr}</span><span>${place.dist}</span></div>
-          <div class="place-meta" style="margin-top:6px"><span style="color:${isHot ? 'var(--accent2)' : 'var(--muted)'}">${isHot ? 'ГРУПА МАЙЖЕ ЗІБРАНА' : 'ЧЕКАЄ УЧАСНИКІВ'}</span></div>
+          <div class="place-meta" style="margin-top:6px"><span style="color:${isHot ? 'var(--accent2)' : 'var(--muted)'}">${isHot ? t.groupHot : t.groupWait}</span></div>
         </div>
       `;
       card.onclick = () => selectPlace(idx);
@@ -661,8 +900,8 @@
 
       if (error) {
         btn.disabled = false;
-        btn.textContent = 'ПРОГОЛОСУВАТИ →';
-        return showError('vote-error', 'Помилка. Спробуй ще раз.');
+        btn.textContent = t.btnVote;
+        return showError('vote-error', t.errVote);
       }
       groupData = newGroup;
     }
@@ -683,26 +922,26 @@
     for (let i = 0; i < 2; i++) {
       const filled = i < mCount;
       const isYou = filled && i === mCount - 1 && state.userGender === 'M';
-      slotsHtml += `<div class="slot m ${filled ? (isYou ? 'you' : 'filled') : ''}">М</div>`;
+      slotsHtml += `<div class="slot m ${filled ? (isYou ? 'you' : 'filled') : ''}">${t.genderM}</div>`;
     }
     for (let i = 0; i < 2; i++) {
       const filled = i < fCount;
       const isYou = filled && i === fCount - 1 && state.userGender === 'F';
-      slotsHtml += `<div class="slot f ${filled ? (isYou ? 'you' : 'filled') : ''}">Ж</div>`;
+      slotsHtml += `<div class="slot f ${filled ? (isYou ? 'you' : 'filled') : ''}">${t.genderF}</div>`;
     }
     slotsHtml += '</div>';
 
     document.getElementById('codeword-display').textContent = groupData.codeword;
     document.getElementById('meeting-details').innerHTML = `
-      <div class="detail-row"><span class="detail-key">МІСЦЕ</span><span class="detail-val accent">${groupData.place_name}</span></div>
-      <div class="detail-row"><span class="detail-key">АДРЕСА</span><span class="detail-val">${groupData.place_address}</span></div>
-      <div class="detail-row"><span class="detail-key">ДАТА</span><span class="detail-val">${dateLabel}</span></div>
-      <div class="detail-row"><span class="detail-key">ЧАС</span><span class="detail-val accent">${timeLabel}</span></div>
+      <div class="detail-row"><span class="detail-key">${t.detailPlace}</span><span class="detail-val accent">${groupData.place_name}</span></div>
+      <div class="detail-row"><span class="detail-key">${t.detailAddr}</span><span class="detail-val">${groupData.place_address}</span></div>
+      <div class="detail-row"><span class="detail-key">${t.detailDate}</span><span class="detail-val">${dateLabel}</span></div>
+      <div class="detail-row"><span class="detail-key">${t.detailTime}</span><span class="detail-val accent">${timeLabel}</span></div>
       <div class="detail-row" style="flex-direction:column;align-items:flex-start;gap:10px">
-        <span class="detail-key">СКЛАД ГРУПИ</span>
+        <span class="detail-key">${t.detailGroup}</span>
         <div style="display:flex;align-items:center;gap:16px">
           ${slotsHtml}
-          <span style="font-size:9px;color:var(--muted)">${spotsLeft > 0 ? `ЧЕКАЄМО ЩЕ ${spotsLeft}` : 'ГРУПУ ЗІБРАНО'}</span>
+          <span style="font-size:9px;color:var(--muted)">${spotsLeft > 0 ? `${t.slotWaiting} ${spotsLeft}` : t.slotFull}</span>
         </div>
       </div>
     `;
@@ -710,7 +949,7 @@
     // Send confirmation email
     await sendEmail(
       state.userEmail,
-      `Spark — твоя зустріч ${dateLabel}`,
+      `Spark — ${dateLabel}`,
       buildMeetingEmail(state.userName, groupData.place_name, groupData.place_address, dateLabel, timeLabel, groupData.codeword, groupData.id, state.userId)
     );
 
@@ -726,7 +965,7 @@
 
     const reasonsList = document.getElementById('reasons-list');
     reasonsList.innerHTML = '';
-    COMPLAINT_REASONS.forEach(reason => {
+    t.reasons.forEach(reason => {
       const item = document.createElement('div');
       item.className = 'checkbox-item';
       item.innerHTML = `<div class="checkbox-box"></div><div class="checkbox-label">${reason}</div>`;
@@ -772,7 +1011,7 @@
     hideError('feedback-error');
     const description = document.getElementById('complaint-text').value.trim();
     if (state.checkedReasons.length === 0 && !description) {
-      return showError('feedback-error', 'Вибери причину або опиши що сталось');
+      return showError('feedback-error', t.errFeedback);
     }
 
     if (state.feedbackGroupId && state.userId) {

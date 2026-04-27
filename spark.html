@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARK</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@300;400;700;900&family=Martian+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #111111;
+    --border: #222222;
+    --accent: #e8ff47;
+    --accent2: #ff4747;
+    --text: #f0f0f0;
+    --muted: #555555;
+    --muted2: #333333;
+    --blue: #4a9eff;
+    --pink: #ff6b9d;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Martian Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  .screen { display: none; min-height: 100vh; animation: fadeIn 0.4s ease; }
+  .screen.active { display: flex; flex-direction: column; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  #screen-hero { justify-content: space-between; padding: 0; }
+
+  .hero-top { padding: 48px 48px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+
+  .logo { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 13px; letter-spacing: 0.3em; color: var(--accent); }
+
+  .hero-tag { font-size: 10px; color: var(--muted); letter-spacing: 0.2em; text-align: right; line-height: 1.8; }
+
+  .hero-main { padding: 0 48px; flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+  .hero-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: clamp(64px, 12vw, 160px); line-height: 0.9; letter-spacing: -0.03em; color: var(--text); }
+  .hero-title span { color: var(--accent); display: block; }
+
+  .hero-desc { margin-top: 40px; max-width: 480px; font-size: 12px; line-height: 2; color: var(--muted); letter-spacing: 0.05em; }
+  .hero-desc strong { color: var(--text); font-weight: 400; }
+
+  .hero-bottom { padding: 48px; display: flex; justify-content: space-between; align-items: flex-end; border-top: 1px solid var(--border); }
+
+  .hero-stats { display: flex; gap: 48px; }
+  .stat { display: flex; flex-direction: column; gap: 4px; }
+  .stat-num { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 28px; color: var(--text); }
+  .stat-label { font-size: 9px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; }
+
+  .btn-primary { background: var(--accent); color: #000; border: none; padding: 18px 40px; font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.2em; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .btn-primary:hover { background: #fff; transform: translateY(-2px); }
+  .btn-primary:disabled { background: var(--muted2); color: var(--muted); cursor: not-allowed; transform: none; }
+
+  .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border); padding: 16px 36px; font-family: 'Unbounded', sans-serif; font-weight: 400; font-size: 10px; letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .btn-secondary:hover { border-color: var(--text); }
+
+  .ticker { background: var(--accent); color: #000; padding: 10px 0; overflow: hidden; white-space: nowrap; }
+  .ticker-inner { display: inline-block; animation: ticker 20s linear infinite; font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 10px; letter-spacing: 0.3em; }
+  @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  #screen-form, #screen-vote, #screen-confirm, #screen-how, #screen-feedback, #screen-verify, #screen-loading, #screen-success {
+    padding: 48px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .form-container, .confirm-container, .verify-container, .feedback-container, .success-container { width: 100%; max-width: 520px; }
+  .vote-container, .how-container { width: 100%; max-width: 640px; }
+
+  .form-step { font-size: 9px; color: var(--muted); letter-spacing: 0.3em; margin-bottom: 16px; }
+
+  .section-title { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 32px; line-height: 1.1; color: var(--text); margin-bottom: 40px; }
+  .section-title span { color: var(--accent); }
+
+  .field { margin-bottom: 28px; }
+  .field label { display: block; font-size: 9px; color: var(--muted); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 10px; }
+  .field input, .field textarea { width: 100%; background: transparent; border: none; border-bottom: 1px solid var(--border); padding: 12px 0; color: var(--text); font-family: 'Martian Mono', monospace; font-size: 16px; outline: none; transition: border-color 0.2s; resize: none; }
+  .field input:focus, .field textarea:focus { border-bottom-color: var(--accent); }
+  .field input::placeholder, .field textarea::placeholder { color: var(--muted2); }
+
+  .gender-label { display: block; font-size: 9px; color: var(--muted); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 10px; }
+  .gender-select { display: flex; gap: 2px; margin-bottom: 28px; }
+  .gender-btn { flex: 1; background: transparent; border: 1px solid var(--border); color: var(--muted); padding: 14px 8px; font-family: 'Unbounded', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.15em; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
+  .gender-btn:hover { border-color: var(--muted); color: var(--text); }
+  .gender-btn.selected { background: var(--accent); border-color: var(--accent); color: #000; }
+
+  .geo-notice { background: var(--surface); border: 1px solid var(--border); padding: 16px 20px; margin-bottom: 36px; display: flex; align-items: flex-start; gap: 12px; }
+  .geo-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-top: 4px; flex-shrink: 0; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .geo-text { font-size: 10px; color: var(--muted); line-height: 1.8; letter-spacing: 0.05em; }
+
+  .error-msg { background: rgba(255,71,71,0.1); border: 1px solid var(--accent2); padding: 12px 16px; font-size: 10px; color: var(--accent2); letter-spacing: 0.05em; margin-bottom: 20px; display: none; }
+
+  .progress-bar { height: 1px; background: var(--border); margin-bottom: 48px; }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.4s ease; }
+
+  .nav-back { background: none; border: none; color: var(--muted); font-family: 'Martian Mono', monospace; font-size: 9px; letter-spacing: 0.2em; cursor: pointer; padding: 0; margin-bottom: 40px; display: flex; align-items: center; gap: 8px; transition: color 0.2s; text-transform: uppercase; }
+  .nav-back:hover { color: var(--text); }
+
+  /* VOTE */
+  .places { display: flex; flex-direction: column; gap: 2px; margin-bottom: 36px; }
+  .place-card { background: var(--surface); border: 1px solid var(--border); padding: 24px 28px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 24px; position: relative; overflow: hidden; }
+  .place-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--accent); transform: scaleY(0); transition: transform 0.2s; }
+  .place-card:hover { border-color: var(--muted); }
+  .place-card:hover::before { transform: scaleY(0.3); }
+  .place-card.selected { border-color: var(--accent); background: rgba(232,255,71,0.05); }
+  .place-card.selected::before { transform: scaleY(1); }
+  .place-num { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 36px; color: var(--muted2); transition: color 0.2s; min-width: 48px; }
+  .place-card.selected .place-num { color: var(--accent); }
+  .place-name { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 6px; letter-spacing: 0.05em; }
+  .place-meta { font-size: 9px; color: var(--muted); letter-spacing: 0.15em; display: flex; gap: 16px; flex-wrap: wrap; }
+  .place-type { color: var(--accent); }
+  .vote-note { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; line-height: 2; margin-bottom: 32px; padding-left: 16px; border-left: 1px solid var(--border); }
+
+  /* CONFIRM */
+  .confirm-container { text-align: center; }
+  .confirm-icon { width: 80px; height: 80px; border: 1px solid var(--accent); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 40px; position: relative; }
+  .confirm-icon::before { content: ''; position: absolute; inset: -8px; border-radius: 50%; border: 1px solid var(--border); }
+  .confirm-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); animation: pulse 1.5s infinite; }
+  .confirm-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 42px; color: var(--text); margin-bottom: 8px; }
+  .confirm-sub { font-family: 'Unbounded', sans-serif; font-weight: 300; font-size: 14px; color: var(--muted); letter-spacing: 0.2em; margin-bottom: 48px; }
+  .codeword-block { background: var(--surface); border: 1px solid var(--border); padding: 32px; margin-bottom: 32px; }
+  .codeword-label { font-size: 9px; color: var(--muted); letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 16px; }
+  .codeword { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 48px; color: var(--accent); letter-spacing: 0.1em; }
+  .codeword-note { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; line-height: 2; margin-top: 16px; }
+  .meeting-details { background: var(--surface); border: 1px solid var(--border); padding: 24px 32px; margin-bottom: 40px; text-align: left; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { font-size: 9px; color: var(--muted); letter-spacing: 0.2em; text-transform: uppercase; }
+  .detail-val { font-size: 11px; color: var(--text); }
+  .detail-val.accent { color: var(--accent); }
+  .confirm-footer { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; line-height: 2.2; }
+
+  /* SLOTS */
+  .group-slots { display: flex; gap: 6px; }
+  .slot { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 8px; font-family: 'Unbounded', sans-serif; font-weight: 700; }
+  .slot.m { border-color: var(--blue); color: var(--blue); }
+  .slot.f { border-color: var(--pink); color: var(--pink); }
+  .slot.m.filled { background: var(--blue); color: #000; }
+  .slot.f.filled { background: var(--pink); color: #000; }
+  .slot.you { border-color: var(--accent); background: var(--accent); color: #000; animation: pulse 1.5s infinite; }
+
+  /* HOW */
+  .how-pre { font-size: 9px; color: var(--muted); letter-spacing: 0.3em; margin-bottom: 16px; }
+  .how-title { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 40px; line-height: 1.1; margin-bottom: 64px; }
+  .steps { display: flex; flex-direction: column; margin-bottom: 48px; }
+  .step { display: flex; gap: 32px; padding: 28px 0; border-bottom: 1px solid var(--border); }
+  .step-num { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 11px; color: var(--accent); letter-spacing: 0.2em; min-width: 32px; padding-top: 2px; }
+  .step-name { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 8px; }
+  .step-desc { font-size: 10px; color: var(--muted); line-height: 2; }
+  .step-desc strong { color: var(--text); font-weight: 400; }
+  .rules-block { background: var(--surface); border: 1px solid var(--border); padding: 28px 32px; margin-bottom: 40px; }
+  .rules-title { font-size: 9px; color: var(--muted); letter-spacing: 0.3em; margin-bottom: 20px; }
+  .rule { display: flex; gap: 16px; margin-bottom: 12px; font-size: 10px; color: var(--muted); line-height: 1.8; }
+  .rule-mark { color: var(--accent2); flex-shrink: 0; }
+  .rule strong { color: var(--text); font-weight: 400; }
+
+  /* LOADING */
+  .loading { display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  .loading-dots { display: flex; gap: 8px; }
+  .loading-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: loadDot 1.2s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes loadDot { 0%,80%,100% { opacity: 0.2; transform: scale(0.8); } 40% { opacity: 1; transform: scale(1); } }
+  .loading-text { font-size: 9px; color: var(--muted); letter-spacing: 0.3em; }
+
+  /* FEEDBACK */
+  .feedback-btns { display: flex; gap: 2px; margin-bottom: 36px; }
+  .btn-feedback { flex: 1; padding: 20px; font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 0.1em; cursor: pointer; border: none; transition: all 0.2s; }
+  .btn-feedback.good { background: var(--accent); color: #000; }
+  .btn-feedback.good:hover { background: #fff; }
+  .btn-feedback.bad { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+  .btn-feedback.bad:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .complaint-section { display: none; }
+  .complaint-section.visible { display: block; }
+
+  .checkbox-group { display: flex; flex-direction: column; gap: 2px; margin-bottom: 24px; }
+  .checkbox-item { display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); cursor: pointer; transition: border-color 0.2s; }
+  .checkbox-item:hover { border-color: var(--muted); }
+  .checkbox-item.checked { border-color: var(--accent); }
+  .checkbox-box { width: 16px; height: 16px; border: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+  .checkbox-item.checked .checkbox-box { background: var(--accent); border-color: var(--accent); }
+  .checkbox-box::after { content: '✓'; font-size: 10px; color: #000; display: none; }
+  .checkbox-item.checked .checkbox-box::after { display: block; }
+  .checkbox-label { font-size: 10px; color: var(--muted); letter-spacing: 0.05em; }
+  .checkbox-item.checked .checkbox-label { color: var(--text); }
+
+  .report-section { margin-top: 32px; padding-top: 32px; border-top: 1px solid var(--border); }
+  .report-title { font-size: 9px; color: var(--muted); letter-spacing: 0.3em; margin-bottom: 16px; }
+  .member-select { display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+  .member-btn { padding: 14px 20px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-family: 'Martian Mono', monospace; font-size: 11px; cursor: pointer; transition: all 0.2s; text-align: left; }
+  .member-btn:hover { border-color: var(--muted); color: var(--text); }
+  .member-btn.selected { border-color: var(--accent2); color: var(--accent2); background: rgba(255,71,71,0.05); }
+
+  /* SUCCESS */
+  .success-container { text-align: center; }
+  .success-icon { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 80px; color: var(--accent); margin-bottom: 24px; line-height: 1; }
+  .success-title { font-family: 'Unbounded', sans-serif; font-weight: 700; font-size: 32px; margin-bottom: 16px; }
+  .success-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; line-height: 2; }
+
+  @media (max-width: 600px) {
+    .hero-top, .hero-main, .hero-bottom { padding: 24px; }
+    .hero-stats { gap: 24px; }
+    #screen-form, #screen-vote, #screen-confirm, #screen-how, #screen-feedback { padding: 24px; }
+    .hero-tag { display: none; }
+    .confirm-title { font-size: 32px; }
+    .codeword { font-size: 36px; }
+    .feedback-btns { flex-direction: column; }
+    .hero-bottom { flex-direction: column; gap: 32px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div id="screen-hero" class="screen active">
+  <div class="hero-top">
+    <div class="logo">SPARK</div>
+    <div class="hero-tag">ФОРМАТ ЖИВОГО<br>ЗНАКОМСТВА<br>v1.0</div>
+  </div>
+  <div class="ticker">
+    <span class="ticker-inner">БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp; БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp; БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp;</span>
+  </div>
+  <div class="hero-main">
+    <div class="hero-title">ЖИВОЕ<br><span>ЗНАКОМ</span>СТВО</div>
+    <div class="hero-desc">
+      Никаких свайпов. Никаких профилей. Никакой переписки до встречи.<br><br>
+      Ты получаешь <strong>место, время и кодовое слово</strong>. Дальше — только реальность.
+    </div>
+  </div>
+  <div class="hero-bottom">
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num">4</div><div class="stat-label">человека за столом</div></div>
+      <div class="stat"><div class="stat-num">2+2</div><div class="stat-label">мужчин и женщин</div></div>
+      <div class="stat"><div class="stat-num">0</div><div class="stat-label">фото до встречи</div></div>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="btn-secondary" onclick="showScreen('screen-how')">КАК ЭТО РАБОТАЕТ</button>
+      <button class="btn-primary" onclick="showScreen('screen-form')">УЧАСТВОВАТЬ</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div id="screen-how" class="screen">
+  <div class="how-container">
+    <button class="nav-back" onclick="showScreen('screen-hero')">← НАЗАД</button>
+    <div class="how-pre">КАК ЭТО РАБОТАЕТ</div>
+    <div class="how-title">ПРОСТО.<br>ЧЕСТНО.<br>ВЖИВУЮ.</div>
+    <div class="steps">
+      <div class="step"><div class="step-num">01</div><div><div class="step-name">Регистрация</div><div class="step-desc">Только имя, возраст, пол и почта. <strong>Никаких фото, никаких анкет.</strong></div></div></div>
+      <div class="step"><div class="step-num">02</div><div><div class="step-name">Голосование</div><div class="step-desc">Три случайных места рядом с тобой. <strong>Анонимно выбираешь одно.</strong> Время система назначает сама.</div></div></div>
+      <div class="step"><div class="step-num">03</div><div><div class="step-name">Группа 2+2</div><div class="step-desc">Система добавляет тебя в <strong>ближайшую группу</strong>. Всегда 2 мужчины и 2 женщины.</div></div></div>
+      <div class="step"><div class="step-num">04</div><div><div class="step-name">Кодовое слово</div><div class="step-desc">На почту приходит адрес, время и <strong>одно слово</strong>. Скажи его вслух — и те кто пришёл поймут что ты с ними.</div></div></div>
+      <div class="step"><div class="step-num">05</div><div><div class="step-name">Встреча</div><div class="step-desc"><strong>Никакого сценария.</strong> Четыре незнакомых человека. Живой разговор.</div></div></div>
+    </div>
+    <div class="rules-block">
+      <div class="rules-title">ПРАВИЛА НА ВСТРЕЧЕ</div>
+      <div class="rule"><span class="rule-mark">×</span><span>Не спрашивай <strong>«чем занимаешься»</strong> первые 15 минут</span></div>
+      <div class="rule"><span class="rule-mark">×</span><span>Не спрашивай <strong>«сколько лет»</strong></span></div>
+      <div class="rule"><span class="rule-mark">×</span><span>Телефон — <strong>в карман</strong> на первый час</span></div>
+    </div>
+    <button class="btn-primary" onclick="showScreen('screen-form')" style="width:100%">УЧАСТВОВАТЬ →</button>
+  </div>
+</div>
+
+<!-- FORM -->
+<div id="screen-form" class="screen">
+  <div class="form-container">
+    <button class="nav-back" onclick="showScreen('screen-hero')">← НАЗАД</button>
+    <div class="progress-bar"><div class="progress-fill" style="width:33%"></div></div>
+    <div class="form-step">ШАГ 01 / 02</div>
+    <div class="section-title">КТО<br><span>ТЫ</span></div>
+    <div id="form-error" class="error-msg"></div>
+    <div class="field"><label>Имя</label><input type="text" id="input-name" placeholder="Алексей" maxlength="40"></div>
+    <div class="field"><label>Возраст</label><input type="number" id="input-age" placeholder="27" min="18" max="65"></div>
+    <div class="field"><label>Email</label><input type="email" id="input-email" placeholder="hello@email.com"></div>
+    <span class="gender-label">Пол</span>
+    <div class="gender-select">
+      <button class="gender-btn" id="gender-m" onclick="selectGender('M')">М</button>
+      <button class="gender-btn" id="gender-f" onclick="selectGender('F')">Ж</button>
+    </div>
+    <div class="geo-notice">
+      <div class="geo-dot"></div>
+      <div class="geo-text">Геолокация используется <strong>один раз</strong> — чтобы найти места рядом с тобой.</div>
+    </div>
+    <button class="btn-primary" style="width:100%" id="form-submit-btn" onclick="handleFormSubmit()">НАЙТИ МЕСТА →</button>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div id="screen-loading" class="screen">
+  <div class="loading">
+    <div class="loading-dots">
+      <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+    </div>
+    <div class="loading-text" id="loading-text">ОПРЕДЕЛЯЕМ МЕСТОПОЛОЖЕНИЕ...</div>
+  </div>
+</div>
+
+<!-- VOTE -->
+<div id="screen-vote" class="screen">
+  <div class="vote-container">
+    <button class="nav-back" onclick="showScreen('screen-form')">← НАЗАД</button>
+    <div class="progress-bar"><div class="progress-fill" style="width:66%"></div></div>
+    <div class="form-step">ШАГ 02 / 02 — АНОНИМНОЕ ГОЛОСОВАНИЕ</div>
+    <div class="section-title">ГДЕ<br><span>ВСТРЕТИМСЯ</span></div>
+    <div id="vote-error" class="error-msg"></div>
+    <div class="places" id="places-list"></div>
+    <div class="vote-note">Время и дата назначаются автоматически.<br>Система добавит тебя в ближайшую группу.<br>Детали придут на почту.</div>
+    <button class="btn-primary" style="width:100%;margin-top:24px" id="vote-btn" onclick="handleVote()" disabled>ПРОГОЛОСОВАТЬ →</button>
+  </div>
+</div>
+
+<!-- CONFIRM -->
+<div id="screen-confirm" class="screen">
+  <div class="confirm-container">
+    <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+    <div class="confirm-icon"><div class="confirm-dot"></div></div>
+    <div class="confirm-title">ГОТОВО</div>
+    <div class="confirm-sub">ТЫ В ИГРЕ</div>
+    <div class="codeword-block">
+      <div class="codeword-label">КОДОВОЕ СЛОВО ДЛЯ ВСТРЕЧИ</div>
+      <div class="codeword" id="codeword-display">RABBIT</div>
+      <div class="codeword-note">Скажи это слово вслух когда придёшь —<br>остальные поймут что ты с ними</div>
+    </div>
+    <div class="meeting-details" id="meeting-details"></div>
+    <div class="confirm-footer">
+      Все детали отправлены на твою почту.<br>
+      Через 2 часа после встречи мы спросим как всё прошло.<br><br>
+      <strong style="color:var(--text)">Приди — или упусти.</strong>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK -->
+<div id="screen-feedback" class="screen">
+  <div class="feedback-container">
+    <div class="section-title">КАК<br><span>ПРОШЛО?</span></div>
+    <div style="font-size:10px;color:var(--muted);letter-spacing:0.1em;line-height:2;margin-bottom:36px">Расскажи о встрече — это помогает сделать Spark лучше.</div>
+    <div id="feedback-error" class="error-msg"></div>
+    <div class="feedback-btns">
+      <button class="btn-feedback good" onclick="handleFeedbackGood()">ВСЁ ОТЛИЧНО</button>
+      <button class="btn-feedback bad" onclick="showComplaintForm()">БЫЛА ПРОБЛЕМА</button>
+    </div>
+    <div class="complaint-section" id="complaint-section">
+      <span class="gender-label">ЧТО ПОШЛО НЕ ТАК</span>
+      <div class="checkbox-group" id="reasons-list"></div>
+      <div class="field">
+        <label>Своими словами (необязательно)</label>
+        <textarea id="complaint-text" placeholder="Опиши что случилось..." rows="3"></textarea>
+      </div>
+      <div class="report-section" id="report-section">
+        <div class="report-title">ПОЖАЛОВАТЬСЯ НА УЧАСТНИКА (АНОНИМНО)</div>
+        <div class="member-select" id="member-list"></div>
+      </div>
+      <button class="btn-primary" style="width:100%;margin-top:24px" onclick="handleFeedbackBad()">ОТПРАВИТЬ →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="screen-success" class="screen">
+  <div class="success-container">
+    <div class="success-icon">✓</div>
+    <div class="success-title">СПАСИБО</div>
+    <div class="success-sub">Твой отзыв получен.<br>Он поможет сделать следующие встречи лучше.<br><br><span style="color:var(--text)">До следующего Spark.</span></div>
+  </div>
+</div>
+
+<script>
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://kogzylbfbjxcuehfgonf.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtvZ3p5bGJmYmp4Y3VlaGZnb25mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcyMDQ4MTQsImV4cCI6MjA5Mjc4MDgxNH0.TqfC8ZsP0z2bPvHQl4Dt7CBpexvrozvT2uHKMUgPVEw'
+  );
+
+  const RESEND_KEY = 're_5nzZUkTa_F4wXgGsFMnAnKdzoSRMLQfok';
+
+  const CODEWORDS = ['RABBIT','ANCHOR','COMPASS','LANTERN','FALCON','MARBLE','SIGNAL','EMBER','CIPHER','ATLAS','VECTOR','PRISM','ECHO','DRIFT','NOVA'];
+
+  const PLACES_DATA = [
+    { name: 'DOUBLE B', type: 'КОФЕЙНЯ', dist: '0.8 КМ', addr: 'вул. Хрещатик, 15' },
+    { name: 'BARMAN DICTAT', type: 'БАР', dist: '1.2 КМ', addr: 'вул. Саксаганського, 58' },
+    { name: 'AROMA KAVA', type: 'КАФЕ', dist: '0.6 КМ', addr: 'вул. Велика Васильківська, 4' },
+    { name: 'HIDDEN BAR', type: 'БАР', dist: '1.5 КМ', addr: 'вул. Воздвиженська, 10' },
+    { name: 'YELLOW', type: 'КАФЕ', dist: '0.4 КМ', addr: 'вул. Антоновича, 18' },
+    { name: 'OSTАННЯ BARRIKADA', type: 'БАР', dist: '0.9 КМ', addr: 'вул. Воздвиженська, 7' },
+    { name: 'BROOKLYN', type: 'РЕСТОРАН', dist: '1.1 КМ', addr: 'вул. Басейна, 5' },
+    { name: 'CULT', type: 'КАФЕ', dist: '0.7 КМ', addr: 'вул. Лисенка, 1' },
+  ];
+
+  const COMPLAINT_REASONS = [
+    'Хтось не прийшов на зустріч',
+    'Некоректна поведінка учасника',
+    'Агресія або погрози',
+    'Неповажне ставлення',
+    'Інше',
+  ];
+
+  const DAYS = ['Понеділок','Вівторок','Середа','Четвер','П\'ятниця','Субота','Неділя'];
+  const MONTHS = ['січня','лютого','березня','квітня','травня','червня','липня','серпня','вересня','жовтня','листопада','грудня'];
+
+  let state = {
+    userId: null,
+    userName: null,
+    userEmail: null,
+    userGender: null,
+    groupId: null,
+    selectedPlace: null,
+    chosenPlaces: [],
+    checkedReasons: [],
+    reportedMember: null,
+    feedbackGroupId: null,
+  };
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideError(id) {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function getMeetingDate(daysAhead) {
+    const d = new Date();
+    d.setDate(d.getDate() + daysAhead);
+    d.setHours(19, 0, 0, 0);
+    const dayName = DAYS[d.getDay() === 0 ? 6 : d.getDay() - 1];
+    return {
+      label: `${dayName}, ${d.getDate()} ${MONTHS[d.getMonth()]}`,
+      time: '19:00',
+      iso: d.toISOString(),
+    };
+  }
+
+  function selectGender(g) {
+    state.userGender = g;
+    document.getElementById('gender-m').classList.toggle('selected', g === 'M');
+    document.getElementById('gender-f').classList.toggle('selected', g === 'F');
+  }
+
+  async function sendEmail(to, subject, html) {
+    try {
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${RESEND_KEY}` },
+        body: JSON.stringify({ from: 'Spark <onboarding@resend.dev>', to: [to], subject, html }),
+      });
+    } catch(e) { console.error('Email error:', e); }
+  }
+
+  function buildMeetingEmail(name, placeName, placeAddr, date, time, codeword, groupId, userId) {
+    const feedbackUrl = `${window.location.origin}${window.location.pathname}?feedback=${groupId}&user=${userId}`;
+    return `
+      <div style="background:#0a0a0a;color:#f0f0f0;padding:48px;font-family:monospace;max-width:600px">
+        <div style="font-size:20px;font-weight:900;letter-spacing:0.3em;color:#e8ff47;margin-bottom:32px">SPARK</div>
+        <div style="font-size:16px;margin-bottom:8px">Привіт, ${name}.</div>
+        <div style="font-size:12px;color:#555;margin-bottom:32px;line-height:2">Твою групу зібрано. Ось все що тобі потрібно знати.</div>
+        <div style="background:#111;border:1px solid #222;padding:24px;margin-bottom:16px">
+          <div style="font-size:9px;color:#555;letter-spacing:0.3em;margin-bottom:8px">КОДОВЕ СЛОВО</div>
+          <div style="font-size:42px;font-weight:900;color:#e8ff47;letter-spacing:0.1em">${codeword}</div>
+          <div style="font-size:10px;color:#555;margin-top:12px">Скажи це слово вголос коли прийдеш</div>
+        </div>
+        <div style="background:#111;border:1px solid #222;padding:24px;margin-bottom:32px">
+          <table style="width:100%;border-collapse:collapse">
+            <tr style="border-bottom:1px solid #222"><td style="padding:8px 0;font-size:9px;color:#555;letter-spacing:0.2em">МІСЦЕ</td><td style="padding:8px 0;font-size:11px;color:#e8ff47;text-align:right">${placeName}</td></tr>
+            <tr style="border-bottom:1px solid #222"><td style="padding:8px 0;font-size:9px;color:#555;letter-spacing:0.2em">АДРЕСА</td><td style="padding:8px 0;font-size:11px;text-align:right">${placeAddr}</td></tr>
+            <tr style="border-bottom:1px solid #222"><td style="padding:8px 0;font-size:9px;color:#555;letter-spacing:0.2em">ДАТА</td><td style="padding:8px 0;font-size:11px;text-align:right">${date}</td></tr>
+            <tr><td style="padding:8px 0;font-size:9px;color:#555;letter-spacing:0.2em">ЧАС</td><td style="padding:8px 0;font-size:11px;color:#e8ff47;text-align:right">${time}</td></tr>
+          </table>
+        </div>
+        <div style="font-size:10px;color:#555;line-height:2;margin-bottom:32px">Прийди — або пропусти.<br>Через 2 години після зустрічі ми запитаємо як все пройшло.</div>
+        <div style="font-size:9px;color:#333;margin-top:32px;padding-top:16px;border-top:1px solid #222">Посилання для відгуку буде надіслано окремо після зустрічі.</div>
+      </div>
+    `;
+  }
+
+  function buildFeedbackEmail(name, groupId, userId) {
+    const url = `${window.location.origin}${window.location.pathname}?feedback=${groupId}&user=${userId}`;
+    return `
+      <div style="background:#0a0a0a;color:#f0f0f0;padding:48px;font-family:monospace;max-width:600px">
+        <div style="font-size:20px;font-weight:900;letter-spacing:0.3em;color:#e8ff47;margin-bottom:32px">SPARK</div>
+        <div style="font-size:16px;margin-bottom:8px">Привіт, ${name}.</div>
+        <div style="font-size:12px;color:#555;margin-bottom:32px;line-height:2">Сподіваємось зустріч пройшла добре. Як все було?</div>
+        <a href="${url}" style="display:block;background:#e8ff47;color:#000;padding:20px;text-align:center;font-weight:900;font-size:13px;letter-spacing:0.2em;text-decoration:none;margin-bottom:16px">РОЗПОВІСТИ ПРО ЗУСТРІЧ</a>
+        <div style="font-size:10px;color:#555;line-height:2">Це займе 30 секунд. Твій відгук допомагає зробити Spark кращим.</div>
+      </div>
+    `;
+  }
+
+  // FORM SUBMIT
+  async function handleFormSubmit() {
+    hideError('form-error');
+    const name = document.getElementById('input-name').value.trim();
+    const age = parseInt(document.getElementById('input-age').value);
+    const email = document.getElementById('input-email').value.trim().toLowerCase();
+    const gender = state.userGender;
+
+    if (!name || !age || !email || !gender) return showError('form-error', 'Заповни всі поля');
+    if (age < 18 || age > 65) return showError('form-error', 'Вік від 18 до 65');
+    if (!email.includes('@')) return showError('form-error', 'Вкажи коректний email');
+
+    const btn = document.getElementById('form-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'ЗБЕРІГАЄМО...';
+
+    const { data: existing } = await sb.from('users').select('id,name').eq('email', email).maybeSingle();
+
+    if (existing) {
+      state.userId = existing.id;
+      state.userName = existing.name;
+    } else {
+      const { data: newUser, error } = await sb.from('users').insert({ name, age, email, gender, verified: true }).select().single();
+      if (error) {
+        btn.disabled = false;
+        btn.textContent = 'ЗНАЙТИ МІСЦЯ →';
+        return showError('form-error', `Помилка: ${error.message} (${error.code})`);
+      }
+      state.userId = newUser.id;
+      state.userName = name;
+    }
+
+    state.userEmail = email;
+    state.userGender = gender;
+
+    showScreen('screen-loading');
+    const steps = ['ВИЗНАЧАЄМО МІСЦЕЗНАХОДЖЕННЯ...', 'ШУКАЄМО МІСЦЯ ПОРУЧ...', 'ПІДБИРАЄМО ГРУПУ...'];
+    let i = 0;
+    const iv = setInterval(() => {
+      i++;
+      if (i < steps.length) {
+        document.getElementById('loading-text').textContent = steps[i];
+      } else {
+        clearInterval(iv);
+        buildVoteScreen();
+        showScreen('screen-vote');
+      }
+    }, 900);
+  }
+
+  function buildVoteScreen() {
+    state.chosenPlaces = shuffle(PLACES_DATA).slice(0, 3);
+    state.selectedPlace = null;
+    const list = document.getElementById('places-list');
+    list.innerHTML = '';
+    state.chosenPlaces.forEach((place, idx) => {
+      const isHot = idx === 0;
+      const card = document.createElement('div');
+      card.className = 'place-card';
+      card.innerHTML = `
+        <div class="place-num">0${idx + 1}</div>
+        <div class="place-info">
+          <div class="place-name">${place.name}</div>
+          <div class="place-meta"><span class="place-type">${place.type}</span><span>${place.addr}</span><span>${place.dist}</span></div>
+          <div class="place-meta" style="margin-top:6px"><span style="color:${isHot ? 'var(--accent2)' : 'var(--muted)'}">${isHot ? 'ГРУПА МАЙЖЕ ЗІБРАНА' : 'ЧЕКАЄ УЧАСНИКІВ'}</span></div>
+        </div>
+      `;
+      card.onclick = () => selectPlace(idx);
+      list.appendChild(card);
+    });
+    document.getElementById('vote-btn').disabled = true;
+  }
+
+  function selectPlace(idx) {
+    state.selectedPlace = idx;
+    document.querySelectorAll('.place-card').forEach((c, i) => c.classList.toggle('selected', i === idx));
+    document.getElementById('vote-btn').disabled = false;
+  }
+
+  // VOTE SUBMIT
+  async function handleVote() {
+    if (state.selectedPlace === null) return;
+    hideError('vote-error');
+    const btn = document.getElementById('vote-btn');
+    btn.disabled = true;
+    btn.textContent = 'ШУКАЄМО ГРУПУ...';
+
+    const place = state.chosenPlaces[state.selectedPlace];
+    const genderKey = state.userGender === 'M' ? 'male_count' : 'female_count';
+    const otherKey = state.userGender === 'M' ? 'female_count' : 'male_count';
+
+    // Get blocked pair IDs for this user
+    const { data: blocked } = await sb.from('blocked_pairs').select('user_a,user_b').or(`user_a.eq.${state.userId},user_b.eq.${state.userId}`);
+    const blockedIds = (blocked || []).map(b => b.user_a === state.userId ? b.user_b : b.user_a);
+
+    // Find available groups
+    const { data: groups } = await sb.from('groups').select('*').eq('place_name', place.name).eq('status', 'forming').lt(genderKey, 2).order('meeting_date', { ascending: true });
+
+    let targetGroup = null;
+    for (const g of (groups || [])) {
+      const { data: members } = await sb.from('group_members').select('user_id').eq('group_id', g.id);
+      const memberIds = (members || []).map(m => m.user_id);
+      if (!memberIds.some(id => blockedIds.includes(id))) {
+        targetGroup = g;
+        break;
+      }
+    }
+
+    let groupData;
+
+    if (targetGroup) {
+      const newCount = targetGroup[genderKey] + 1;
+      const isFull = newCount === 2 && targetGroup[otherKey] === 2;
+      await sb.from('groups').update({ [genderKey]: newCount, status: isFull ? 'full' : 'forming' }).eq('id', targetGroup.id);
+      groupData = { ...targetGroup, [genderKey]: newCount };
+    } else {
+      const meeting = getMeetingDate(2);
+      const { data: newGroup, error } = await sb.from('groups').insert({
+        place_name: place.name,
+        place_address: place.addr,
+        codeword: CODEWORDS[Math.floor(Math.random() * CODEWORDS.length)],
+        meeting_date: meeting.iso,
+        [genderKey]: 1,
+        [otherKey]: 0,
+        status: 'forming',
+      }).select().single();
+
+      if (error) {
+        btn.disabled = false;
+        btn.textContent = 'ПРОГОЛОСУВАТИ →';
+        return showError('vote-error', 'Помилка. Спробуй ще раз.');
+      }
+      groupData = newGroup;
+    }
+
+    await sb.from('group_members').insert({ group_id: groupData.id, user_id: state.userId });
+    state.groupId = groupData.id;
+
+    const meetDate = new Date(groupData.meeting_date);
+    const dayName = DAYS[meetDate.getDay() === 0 ? 6 : meetDate.getDay() - 1];
+    const dateLabel = `${dayName}, ${meetDate.getDate()} ${MONTHS[meetDate.getMonth()]}`;
+    const timeLabel = `${String(meetDate.getHours()).padStart(2,'0')}:${String(meetDate.getMinutes()).padStart(2,'0')}`;
+
+    const mCount = groupData.male_count;
+    const fCount = groupData.female_count;
+    const spotsLeft = 4 - mCount - fCount;
+
+    let slotsHtml = '<div class="group-slots">';
+    for (let i = 0; i < 2; i++) {
+      const filled = i < mCount;
+      const isYou = filled && i === mCount - 1 && state.userGender === 'M';
+      slotsHtml += `<div class="slot m ${filled ? (isYou ? 'you' : 'filled') : ''}">М</div>`;
+    }
+    for (let i = 0; i < 2; i++) {
+      const filled = i < fCount;
+      const isYou = filled && i === fCount - 1 && state.userGender === 'F';
+      slotsHtml += `<div class="slot f ${filled ? (isYou ? 'you' : 'filled') : ''}">Ж</div>`;
+    }
+    slotsHtml += '</div>';
+
+    document.getElementById('codeword-display').textContent = groupData.codeword;
+    document.getElementById('meeting-details').innerHTML = `
+      <div class="detail-row"><span class="detail-key">МІСЦЕ</span><span class="detail-val accent">${groupData.place_name}</span></div>
+      <div class="detail-row"><span class="detail-key">АДРЕСА</span><span class="detail-val">${groupData.place_address}</span></div>
+      <div class="detail-row"><span class="detail-key">ДАТА</span><span class="detail-val">${dateLabel}</span></div>
+      <div class="detail-row"><span class="detail-key">ЧАС</span><span class="detail-val accent">${timeLabel}</span></div>
+      <div class="detail-row" style="flex-direction:column;align-items:flex-start;gap:10px">
+        <span class="detail-key">СКЛАД ГРУПИ</span>
+        <div style="display:flex;align-items:center;gap:16px">
+          ${slotsHtml}
+          <span style="font-size:9px;color:var(--muted)">${spotsLeft > 0 ? `ЧЕКАЄМО ЩЕ ${spotsLeft}` : 'ГРУПУ ЗІБРАНО'}</span>
+        </div>
+      </div>
+    `;
+
+    // Send confirmation email
+    await sendEmail(
+      state.userEmail,
+      `Spark — твоя зустріч ${dateLabel}`,
+      buildMeetingEmail(state.userName, groupData.place_name, groupData.place_address, dateLabel, timeLabel, groupData.codeword, groupData.id, state.userId)
+    );
+
+    showScreen('screen-confirm');
+  }
+
+  // FEEDBACK
+  function handleFeedbackGood() { showScreen('screen-success'); }
+
+  function showComplaintForm() {
+    document.getElementById('complaint-section').classList.add('visible');
+    state.checkedReasons = [];
+
+    const reasonsList = document.getElementById('reasons-list');
+    reasonsList.innerHTML = '';
+    COMPLAINT_REASONS.forEach(reason => {
+      const item = document.createElement('div');
+      item.className = 'checkbox-item';
+      item.innerHTML = `<div class="checkbox-box"></div><div class="checkbox-label">${reason}</div>`;
+      item.onclick = () => {
+        item.classList.toggle('checked');
+        state.checkedReasons = item.classList.contains('checked')
+          ? [...state.checkedReasons, reason]
+          : state.checkedReasons.filter(r => r !== reason);
+      };
+      reasonsList.appendChild(item);
+    });
+
+    loadGroupMembers();
+  }
+
+  async function loadGroupMembers() {
+    if (!state.feedbackGroupId) return;
+    const { data: members } = await sb.from('group_members').select('user_id, users(name)').eq('group_id', state.feedbackGroupId).neq('user_id', state.userId);
+
+    const memberList = document.getElementById('member-list');
+    memberList.innerHTML = '';
+    state.reportedMember = null;
+
+    if (!members || members.length === 0) {
+      document.getElementById('report-section').style.display = 'none';
+      return;
+    }
+
+    members.forEach(m => {
+      const btn = document.createElement('button');
+      btn.className = 'member-btn';
+      btn.textContent = m.users?.name || 'Учасник';
+      btn.onclick = () => {
+        document.querySelectorAll('.member-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        state.reportedMember = m.user_id;
+      };
+      memberList.appendChild(btn);
+    });
+  }
+
+  async function handleFeedbackBad() {
+    hideError('feedback-error');
+    const description = document.getElementById('complaint-text').value.trim();
+    if (state.checkedReasons.length === 0 && !description) {
+      return showError('feedback-error', 'Вибери причину або опиши що сталось');
+    }
+
+    if (state.feedbackGroupId && state.userId) {
+      await sb.from('complaints').insert({
+        from_user_id: state.userId,
+        against_user_id: state.reportedMember || null,
+        group_id: state.feedbackGroupId,
+        reasons: state.checkedReasons,
+        description: description || null,
+      });
+
+      if (state.reportedMember) {
+        await sb.from('blocked_pairs').insert({ user_a: state.userId, user_b: state.reportedMember });
+        const { data: u } = await sb.from('users').select('complaint_count').eq('id', state.reportedMember).maybeSingle();
+        if (u) await sb.from('users').update({ complaint_count: (u.complaint_count || 0) + 1 }).eq('id', state.reportedMember);
+      }
+    }
+
+    showScreen('screen-success');
+  }
+
+  // URL PARAMS — feedback flow
+  function checkUrlParams() {
+    const params = new URLSearchParams(window.location.search);
+    const feedbackGroupId = params.get('feedback');
+    const userId = params.get('user');
+    if (feedbackGroupId && userId) {
+      state.feedbackGroupId = feedbackGroupId;
+      state.userId = userId;
+      showScreen('screen-feedback');
+    }
+  }
+
+  checkUrlParams();
+</script>
+</body>
+</html>

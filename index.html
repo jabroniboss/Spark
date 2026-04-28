@@ -50,7 +50,7 @@
 
   #screen-hero { justify-content: space-between; padding: 0; }
 
-  .hero-top { padding: 48px 48px 0; display: flex; justify-content: space-between; align-items: flex-start; }
+  .hero-top { padding: 48px 48px 24px; display: flex; justify-content: space-between; align-items: flex-start; }
 
   .logo { font-family: 'Unbounded', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: 0.3em; color: var(--accent); }
 
@@ -255,8 +255,7 @@
   <div class="hero-bottom">
     <div class="hero-stats">
       <div class="stat"><div class="stat-num" id="stat-meetings">—</div><div class="stat-label" id="stat-meetings-label">...</div></div>
-      <div class="stat"><div class="stat-num">2+2</div><div class="stat-label" id="stat-gender-label">...</div></div>
-      <div class="stat"><div class="stat-num">0</div><div class="stat-label" id="stat-photo-label">...</div></div>
+      <div class="stat"><div class="stat-num" id="stat-completed">—</div><div class="stat-label" id="stat-completed-label">...</div></div>
     </div>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
       <button class="btn-secondary" onclick="showScreen('screen-how')">КАК ЭТО РАБОТАЕТ</button>
@@ -411,12 +410,11 @@
 
   const T = {
     uk: {
-      heroTitle: 'ТІЛЬКИ ЖИВЕ<br><span>ЗНАЙОМСТВО</span>',
+      heroTitle: 'ТІЛЬКИ<br>ЖИВЕ<br><span>ЗНАЙОМСТВО</span>',
       statMeetings: 'зустрічей створено',
-      statGender: 'чоловіків та жінок',
-      statPhoto: 'фото до зустрічі',
+      statCompleted: 'зустрічей проведено',
       ticker: 'БЕЗ ПРОФІЛІВ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТІЛЬКИ РЕАЛЬНІСТЬ &nbsp;·&nbsp; БЕЗ ПРОФІЛІВ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТІЛЬКИ РЕАЛЬНІСТЬ &nbsp;·&nbsp;',
-      heroDesc: 'Ніяких свайпів. Ніяких профілів. Ніякого листування до зустрічі.<br><br>Ти отримуєш <strong>місце, час і кодове слово</strong>. Далі — тільки реальність.',
+      heroDesc: 'Ніяких свайпів. Ніяких профілів. Ніякого листування до зустрічі.<br><br>Ти отримуєш <strong>місце, час і кодове слово</strong>.<br>Далі — тільки реальність.',
       btnHow: 'ЯК ЦЕ ПРАЦЮЄ',
       btnJoin: 'ВЗЯТИ УЧАСТЬ',
       formStep: 'КРОК 01 / 02',
@@ -470,12 +468,11 @@
       commentPlaceholder: 'Опиши що сталось...',
     },
     ru: {
-      heroTitle: 'ТОЛЬКО ЖИВОЕ<br><span>ЗНАКОМСТВО</span>',
+      heroTitle: 'ТОЛЬКО<br>ЖИВОЕ<br><span>ЗНАКОМСТВО</span>',
       statMeetings: 'встреч создано',
-      statGender: 'мужчин и женщин',
-      statPhoto: 'фото до встречи',
+      statCompleted: 'встреч проведено',
       ticker: 'БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp; БЕЗ ПРОФИЛЕЙ &nbsp;·&nbsp; БЕЗ ФОТО &nbsp;·&nbsp; БЕЗ ПЕРЕПИСКИ &nbsp;·&nbsp; ТОЛЬКО РЕАЛЬНОСТЬ &nbsp;·&nbsp;',
-      heroDesc: 'Никаких свайпов. Никаких профилей. Никакой переписки до встречи.<br><br>Ты получаешь <strong>место, время и кодовое слово</strong>. Дальше — только реальность.',
+      heroDesc: 'Никаких свайпов. Никаких профилей. Никакой переписки до встречи.<br><br>Ты получаешь <strong>место, время и кодовое слово</strong>.<br>Дальше — только реальность.',
       btnHow: 'КАК ЭТО РАБОТАЕТ',
       btnJoin: 'УЧАСТВОВАТЬ',
       formStep: 'ШАГ 01 / 02',
@@ -528,12 +525,11 @@
       commentPlaceholder: 'Опиши что случилось...',
     },
     en: {
-      heroTitle: 'ONLY REAL<br><span>CONNECTIONS</span>',
+      heroTitle: 'ONLY<br>REAL<br><span>CONNECTIONS</span>',
       statMeetings: 'meetings created',
-      statGender: 'men and women',
-      statPhoto: 'photos before meeting',
+      statCompleted: 'meetings held',
       ticker: 'NO PROFILES &nbsp;·&nbsp; NO PHOTOS &nbsp;·&nbsp; NO CHATS &nbsp;·&nbsp; ONLY REALITY &nbsp;·&nbsp; NO PROFILES &nbsp;·&nbsp; NO PHOTOS &nbsp;·&nbsp; NO CHATS &nbsp;·&nbsp; ONLY REALITY &nbsp;·&nbsp;',
-      heroDesc: 'No swiping. No profiles. No chatting before you meet.<br><br>You get a <strong>place, time and a codeword</strong>. The rest is real life.',
+      heroDesc: 'No swiping. No profiles. No chatting before you meet.<br><br>You get a <strong>place, time and a codeword</strong>.<br>The rest is real life.',
       btnHow: 'HOW IT WORKS',
       btnJoin: 'JOIN',
       formStep: 'STEP 01 / 02',
@@ -593,8 +589,12 @@
   function applyI18n() {
     document.getElementById('hero-title').innerHTML = t.heroTitle;
     document.getElementById('stat-meetings-label').textContent = t.statMeetings;
-    document.getElementById('stat-gender-label').textContent = t.statGender;
-    document.getElementById('stat-photo-label').textContent = t.statPhoto;
+    document.getElementById('stat-completed-label').textContent = t.statCompleted;
+    // Remove unused stat elements if still present
+    const sg = document.getElementById('stat-gender-label');
+    const sp = document.getElementById('stat-photo-label');
+    if (sg) sg.textContent = '';
+    if (sp) sp.textContent = '';
     document.querySelector('.ticker-inner').innerHTML = t.ticker;
     document.querySelector('.hero-desc').innerHTML = t.heroDesc;
     // Hero buttons
@@ -625,10 +625,17 @@
     document.querySelectorAll('.nav-back').forEach(b => b.textContent = t.back);
   }
 
-  // Load real meetings count from Supabase
   async function loadMeetingsCount() {
-    const { count } = await sb.from('groups').select('*', { count: 'exact', head: true });
-    document.getElementById('stat-meetings').textContent = count || 0;
+    // Total groups created
+    const { count: total } = await sb.from('groups').select('*', { count: 'exact', head: true });
+    document.getElementById('stat-meetings').textContent = total || 0;
+
+    // Completed: meeting_date + 5 hours <= now
+    const fiveHoursAgo = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
+    const { count: completed } = await sb.from('groups')
+      .select('*', { count: 'exact', head: true })
+      .lte('meeting_date', fiveHoursAgo);
+    document.getElementById('stat-completed').textContent = completed || 0;
   }
 
   applyI18n();
